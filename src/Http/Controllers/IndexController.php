@@ -34,6 +34,8 @@ class IndexController extends Controller
         } catch (Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ], $e->getCode() === 401 ? 401 : 400);
         }
     }

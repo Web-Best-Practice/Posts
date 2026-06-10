@@ -125,21 +125,30 @@ class PostCreationService
 
         foreach ($columnsToMap as $columnToMapName => $columnToMap) {
             $column = null;
+            $value = null;
             $options = [];
 
             if ($columnToMap === null) {
                 continue;
             }
 
-            if (is_array($columnToMap)) {
-                $column = $columnToMap['column'];
-                $options = $columnToMap['options'];
+            if(is_callable($columnToMap)) {
+                $data[$columnToMapName] = call_user_func($columnToMap);
+            } elseif (is_array($columnToMap)) {
+                if(array_key_exists('column', $columnToMap) && array_key_exists('options', $columnToMap)) {
+                    $column = $columnToMap['column'];
+                    $options = $columnToMap['options'];
+                } elseif(array_key_exists('value', $columnToMap)) {
+                    $value = $columnToMap['value'];
+                }
             } else {
                 $column = $columnToMap;
             }
 
             if ($column === 'date_now') {
                 $data[$columnToMapName] = now()->toDateTimeString();
+            } elseif($value) {
+                $data[$columnToMapName] = $value;
             } elseif (array_key_exists($column, $validated)) {
                 $data[$columnToMapName] = $validated[$column];
             }

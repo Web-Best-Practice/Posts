@@ -15,11 +15,15 @@ return [
         'meta_keywords' => 'meta_keywords',
         'published_at' => null, //'date_now'
         'summary' => ['column' => 'content', 'options' => ['no-html', 'max_characters:100']],
+        /*'custom_field' => ['value' => 'value1'],
+        'category_id' => function() : ?int {
+            return App\Models\Blog\Category::first()?->id;
+        }*/
     ],
     'images' => [
         [
             'column' => 'filename',
-            'callback' => function (UploadedFile $image, string $column) {
+            'callback' => function (UploadedFile $image, string $column) : string {
                 return ImageHelper::make($image)
                     ->uniqueName(new App\Models\Blog\Item, $column)
                     ->addDirectory('upload/blog', 2000)
@@ -29,7 +33,7 @@ return [
         ],
         /*[
             'column' => 'thumbnail_filename',
-            'callback' => function (UploadedFile $image, string $column) {
+            'callback' => function (UploadedFile $image, string $column) : string {
                 return ImageHelper::make($image)
                     ->uniqueName(new App\Models\Blog\Item, $column)
                     ->addDirectory('upload/blog/thumbnails', 2000)
