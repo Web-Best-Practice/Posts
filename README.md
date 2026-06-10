@@ -62,44 +62,49 @@ Error (`401` or `400`):
 
 - `401` — invalid secret or missing post model class
 - `400` — missing column mapping, database error, or image processing failure
-
 ## Configuration
 
 Publish and edit `config/posts.php`:
 
 ```php
 <?php
-
+ 
 use App\Helpers\Image as ImageHelper;
 use Illuminate\Http\UploadedFile;
-
+ 
 return [
-
+ 
     // API authentication secret
     'secret' => 'your-secret-key',
-
+ 
     // Eloquent model used to create posts
     'class' => App\Models\Blog\Item::class,
-
+ 
     // Maps request/model fields to database columns
     'map' => [
-        'title' => 'title',
-        'content' => 'content',
-        'meta_title' => 'meta_title',
+        'title'            => 'title',
+        'content'          => 'content',
+        'meta_title'       => 'meta_title',
         'meta_description' => 'meta_description',
-        'meta_keywords' => 'meta_keywords',
-        'published_at' => 'date_now',
-        'summary' => [
-            'column' => 'content',
+        'meta_keywords'    => 'meta_keywords',
+        'published_at'     => null, // or 'date_now' to set current timestamp
+        'summary'          => [
+            'column'  => 'content',
             'options' => ['no-html', 'max_characters:100'],
         ],
+        // Static value example:
+        // 'custom_field' => ['value' => 'value1'],
+        // Callable example:
+        // 'category_id' => function(): ?int {
+        //     return App\Models\Blog\Category::first()?->id;
+        // },
     ],
-
+ 
     // Image upload handlers (supports multiple entries)
     'images' => [
         [
-            'column' => 'filename',
-            'callback' => function (UploadedFile $image, string $column) {
+            'column'   => 'filename',
+            'callback' => function (UploadedFile $image, string $column): string {
                 return ImageHelper::make($image)
                     ->uniqueName(new App\Models\Blog\Item, $column)
                     ->addDirectory('upload/blog', 2000)
@@ -107,6 +112,17 @@ return [
                     ->save();
             },
         ],
+        // Additional image columns are supported:
+        // [
+        //     'column'   => 'thumbnail_filename',
+        //     'callback' => function (UploadedFile $image, string $column): string {
+        //         return ImageHelper::make($image)
+        //             ->uniqueName(new App\Models\Blog\Item, $column)
+        //             ->addDirectory('upload/blog/thumbnails', 2000)
+        //             ->addDirectory('upload/blog/thumbnails/thumbs', 500)
+        //             ->save();
+        //     },
+        // ],
     ],
 ];
 ```
@@ -132,7 +148,6 @@ The following request fields are required in `map` and must resolve to existing 
 - `meta_title`
 - `meta_keywords`
 - `meta_description`
-
 #### Mapping formats
 
 **Direct mapping** — copy a request field to a model column:
@@ -141,26 +156,42 @@ The following request fields are required in `map` and must resolve to existing 
 'title' => 'title',
 ```
 
+**Skip a mapping** — set to `null` to ignore an entry entirely:
+
+```php
+'published_at' => null,
+```
+
 **Current datetime** — set a column to the current timestamp:
 
 ```php
 'published_at' => 'date_now',
 ```
 
-**Skip a mapping** — ignore an entry:
+**Static value** — always write a fixed value to a column:
 
 ```php
-'published_at' => null,
+'custom_field' => ['value' => 'value1'],
 ```
 
-**Derived field with options** — build a model column from another request field:
+**Callable** — compute the value at creation time using a closure:
+
+```php
+'category_id' => function(): ?int {
+    return App\Models\Blog\Category::first()?->id;
+},
+```
+
+**Derived field with options** — build a model column from another request field with transformations applied:
 
 ```php
 'summary' => [
-    'column' => 'content',
+    'column'  => 'content',
     'options' => ['no-html', 'max_characters:100'],
 ],
 ```
+
+The array key is the target model/database column. `column` refers to the source request field. Options are applied in order.
 
 Supported options:
 
@@ -169,11 +200,9 @@ Supported options:
 | `no-html` | `'no-html'` | Strips HTML tags |
 | `max_characters` | `'max_characters:100'` | Limits string length |
 
-The array key is the model/database column name. The `column` value is the source request field.
-
 ### `images`
 
-An array of image handlers. Each entry may define:
+An array of image handlers. Each entry defines:
 
 | Key | Description |
 |-----|-------------|
@@ -182,11 +211,10 @@ An array of image handlers. Each entry may define:
 
 The callback runs only when:
 
-- an `image` file is uploaded
-- the target column exists in the database table
-- the callback is callable
-
-You can configure multiple image handlers for different columns.
+- an `image` file is uploaded with the request
+- the target `column` exists in the database table
+- the `callback` is callable
+  Multiple handlers are supported, each writing to a different column.
 
 ## Package structure
 
