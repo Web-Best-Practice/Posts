@@ -177,7 +177,7 @@ class PostCreationService
                     [$optionName, $optionValue] = array_pad(explode(':', $option, 2), 2, null);
 
                     $data[$columnToMapName] = match ($optionName) {
-                        'max_characters' => Str::limit($data[$columnToMapName], (int) $optionValue),
+                        'max_characters' => Str::limit($data[$columnToMapName], max(0, (int) $optionValue - 3)),
                         'no-html' => strip_tags($data[$columnToMapName]),
                     };
                 }
